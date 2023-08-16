@@ -249,6 +249,8 @@ for iPt, (ptMin, ptMax) in enumerate(zip(ptMins, ptMaxs)):
     else:
         preselEffPrompt = 1.
         preselEffFD = 1.
+        preselEffPromptUnc = 0.01
+        preselEffFDUnc = 0.01
 
     # acceptance
     ptBinAccMin = hPtGenAcc.GetXaxis().FindBin(ptMin*1.0001)
@@ -486,7 +488,10 @@ for iPt, (ptMin, ptMax) in enumerate(zip(ptMins, ptMaxs)):
             outDirPlotsPt[iPt].cd(f'{ParCutsName}{ParCutMin}-{ParCutMax}')
             cEstimVsCut[counter].Write()
 
-            cEstimVsCut[counter].Print(f'scan_pT{ptMin}_{ptMax}.pdf', 'pdf')
+            prefix = inputCfg['expectedSignalFrom']
+            outputdir = inputCfg['outputdirPlot']
+            cEstimVsCut[counter].Print(f'{outputdir}{prefix}_scan_pT{ptMin}_{ptMax}.pdf', 'pdf')
+            cEstimVsCut[counter].Print(f'{outputdir}{prefix}_scan_pT{ptMin}_{ptMax}.svg', 'svg')
         counter += 1
 outFile.cd()
 tSignif.Write()

@@ -82,21 +82,40 @@ def make_cuts():
                 yaml.dump(cutset_mod, outfile_mod, default_flow_style=False)
 
 def make_cuts_ml():
-    var_key = ['ML_output_FD'] # ['ML_output_FD', 'ML_output_Bkg']
-    var_tag = ['FD'] # ['outFD', 'outBkg'] # used in file names to reduce length
-    step_variation = [{"2": 0.02, "3": 0.02, "4": 0.02, "5": 0.02, "6": 0.02, "8": 0.02, "10": 0.02, "12": 0.02, "16": 0.02, "24": 0.02}]
+    doFD=True
+    doBkg=True
+    if doFD and not doBkg:
+        var_key = ['ML_output_FD'] #, 'ML_output_Bkg']
+        var_tag = ['outFD'] # , 'outBkg'] # used in file names to reduce length
+        step_variation = [{"2": 0.005, "3": 0.005, "4": 0.005, "5": 0.005, "6": 0.005, "7": 0.005, "8": 0.005, "10": 0.005, "12": 0.005, "16": 0.005, "24": 0.005}] #,
+                    #   {"2": 0.00005, "3": 0.00005, "4": 0.00005, "5": 0.00005, "6": 0.00005, "8": 0.00005, "10": 0.00005, "12": 0.00005, "16": 0.00005, "24": 0.00005}]
         # {"2": 0.0001, "3": 0.00005, "4": 0.00005, "5": 0.00005, "6": 0.0001, "8": 0.0002, "12": 0.002, "16": 0.002, "24": 0.002, "36": 0.001}]
         # {"2": 0.00005, "3": 0.00005, "4": 0.00005, "5": 0.00005, "6": 0.0001, "8": 0.0002, "12": 0.002, "16": 0.002, "24": 0.002, "36": 0.001} 0-10%
         # {"2": 0.0001, "3": 0.0001, "4": 0.0001, "5": 0.0001, "6": 0.0002, "8": 0.001, "12": 0.002, "16": 0.002, "24": 0.002, "36": 0.001} 30-50%
         # [{"2": 0.01, "4": 0.01, "6": 0.01, "8": 0.01, "12": 0.01},
         #  {"2": 0.0005, "4": 0.0005, "6": 0.001, "8": 0.001, "12": 0.0005}]
-    num_step_pos = 19
-    num_step_neg = 0
-    edge_to_vary = ['min'] # ['min', 'max']
+        num_step_pos = 10
+        num_step_neg = 10
+        edge_to_vary = ['min'] #, 'max']
+    elif not doFD and doBkg:
+        var_key = ['ML_output_Bkg']
+        var_tag = ['outBkg'] # used in file names to reduce length
+        step_variation = [{"2": 0.0005, "3": 0.0005, "4": 0.0005, "5": 0.0005, "6": 0.0005, "7": 0.0005, "8": 0.0005, "10": 0.0005, "12": 0.0005, "16": 0.0005, "24": 0.0005}] #,
+        num_step_pos = 10
+        num_step_neg = 10
+        edge_to_vary = ['max']
+    elif doFD and doBkg:
+        var_key = ['ML_output_FD', 'ML_output_Bkg']
+        var_tag = ['outFD', 'outBkg']
+        step_variation = [{"2": 0.005, "3": 0.005, "4": 0.005, "5": 0.005, "6": 0.005, "7": 0.005, "8": 0.005, "10": 0.005, "12": 0.005, "16": 0.005, "24": 0.005},
+                          {"2": 0.0005, "3": 0.0005, "4": 0.0005, "5": 0.0005, "6": 0.0005, "7": 0.0005, "8": 0.0005, "10": 0.0005, "12": 0.0005, "16": 0.0005, "24": 0.0005}]
+        num_step_pos = 3
+        num_step_neg = 3
+        edge_to_vary = ['min', 'max']
 
     in_dir = '/home/abigot/AnalysisNonPromptDplus/Run2pPb5Tev/3_ApplySelections/'
-    cut_file_central = 'cutset_default_for_cut_variation.yml'
-    out_dir = '/home/abigot/AnalysisNonPromptDplus/Run2pPb5Tev/3_ApplySelections/cutsets/'
+    cut_file_central = 'cutset_Dplus_pPb5Tev_nonprompt_enhancement.yml'
+    out_dir = '/home/abigot/AnalysisNonPromptDplus/Run2pPb5Tev/5_Systematics/2_MLSelectionEfficiency/cutsets/'
     out_file_tag = 'cutset_pPb5Tev'
 
     if not os.path.exists(out_dir):
@@ -134,7 +153,7 @@ def make_cuts_ml():
                 step_name = 'neg'
                 step += num_step_neg + 1
             # more than 100 files unlikely
-            name = f'_{var_tag[i]}_{edge_to_vary[i]}_{step_name}_{str(int(step)).zfill(3)}'
+            name = f'_{var_tag[i]}_{step_name}_{str(int(step)).zfill(3)}'
             file_tag += name
         cut_file_mod = f'{out_file_tag}{file_tag}.yml'
         with open(out_dir + cut_file_mod, 'w') as outfile_mod:

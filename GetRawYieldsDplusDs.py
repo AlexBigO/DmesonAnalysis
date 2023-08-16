@@ -37,6 +37,10 @@ elif args.centClass == 'kpp13TeVFD':
     cent = 'pp13TeVFD'
 elif args.centClass == 'kpp13TeVPrompt':
     cent = 'pp13TeVPrompt'
+elif args.centClass == 'kpPb5TeVPrompt':
+    cent = 'pPb5TeVPrompt'
+elif args.centClass == 'kpPb5TeVFD':
+    cent = 'pPb5TeVFD'
 else:
     print(f"ERROR: cent class \'{args.centClass}\' is not supported! Exit")
     sys.exit()

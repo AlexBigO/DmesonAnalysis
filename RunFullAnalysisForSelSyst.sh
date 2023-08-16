@@ -1,16 +1,16 @@
 #!/bin/bash
 #steps to be performed
-DoDataProjection=true
-DoMCProjection=true
-DoDataRawYields=true
+DoDataProjection=false
+DoMCProjection=false
+DoDataRawYields=false
 DoMCRawYields=false
-DoEfficiency=true
-DoAccEff=true
+DoEfficiency=false
+DoAccEff=false
 DoAccEffRw=false
 DoHFPtSpec=false
 DoHFPtSpecRaa=false
 DoDmesonYield=false
-DoDataDrivenCrossSection=false
+DoDataDrivenCrossSection=true
 
 #wheter you are projecting a tree or a sparse
 ProjectTree=true
@@ -36,19 +36,19 @@ accFileName="/home/abigot/AnalysisNonPromptDplus/Run2pPb5Tev/2_ML/3_WorkingPoint
 predFileName="models/fonll/feeddown/DmesonLcPredictions_13TeV_y05_FFptDepLHCb_BRpythia8_PDG2020_PromptLcMod.root"
 pprefFileName="" #"ppreference/Ds_ppreference_pp5TeV_noyshift_pt_2_3_4_6_8_12_16_24_36_50.root"
 
-PtWeightsDFileName="" #"home/abigot/AnalysisNonPromptDplus/Run2pPb5Tev/4_Analysis/4_McPtShapeWeight/PtWeigths_NonPromptDplus_LHC16qt.root"
-PtWeightsDHistoName="" #"hPtWeightsFONLLDcent"
-PtWeightsBFileName="" #"home/abigot/AnalysisNonPromptDplus/Run2pPb5Tev/4_Analysis/4_McPtShapeWeight/PtWeigths_NonPromptDplus_LHC16qt.root"
-PtWeightsBHistoName="" #"hPtWeightsFONLLBcent"
+PtWeightsDFileName="/home/abigot/AnalysisNonPromptDplus/Run2pPb5Tev/4_Analysis/4_McPtShapeWeight/PtWeigths_NonPromptDplus_LHC16qt.root"
+PtWeightsDHistoName="hPtWeightsFONLLDcent"
+PtWeightsBFileName="/home/abigot/AnalysisNonPromptDplus/Run2pPb5Tev/4_Analysis/4_McPtShapeWeight/PtWeigths_NonPromptDplus_LHC16qt.root"
+PtWeightsBHistoName="hPtWeightsFONLLBcent"
 
 MultWeightsFileName="" #"systematics/genmultdistr/multweights/MultWeights_pp13TeV_MB_030_fnonprompt.root"
 MultWeightsHistoName="" #"hNtrklWeightsCandInMass"
 
-DataDrivenFractionFileName=""
+DataDrivenFractionFileName="/home/abigot/AnalysisNonPromptDplus/Run2pPb5Tev/4_Analysis/3_YieldFraction/wptweights_cent/cutvar_output.root"
 
 #assuming cutsets config files starting with "cutset" and are .yml
 
-CutSetsDir="/home/abigot/AnalysisNonPromptDplus/Run2pPb5Tev/3_ApplySelections/cutsets/"
+CutSetsDir="/home/abigot/AnalysisNonPromptDplus/Run2pPb5Tev/5_Systematics/2_MLSelectionEfficiency/cutsets/"
 declare -a CutSets=()
 for filename in ${CutSetsDir}/*.yml; do
     tmp_name="$(basename -- ${filename} .yml)"
@@ -59,9 +59,9 @@ arraylength=${#CutSets[@]}
 
 
 
-OutDirRawyields="/home/abigot/AnalysisNonPromptDplus/Run2pPb5Tev/4_Analysis/1_RawYieldExtraction/rawyields_woptweights" #_ptweights_cent"
-OutDirEfficiency="/home/abigot/AnalysisNonPromptDplus/Run2pPb5Tev/4_Analysis/2_AcceptanceEfficiency/efficiencies_woptweights" #_ptweights_cent"
-OutDirCrossSec=""
+OutDirRawyields="/home/abigot/AnalysisNonPromptDplus/Run2pPb5Tev/5_Systematics/2_MLSelectionEfficiency/rawyields"
+OutDirEfficiency="/home/abigot/AnalysisNonPromptDplus/Run2pPb5Tev/5_Systematics/2_MLSelectionEfficiency/efficiencies"
+OutDirCrossSec="/home/abigot/AnalysisNonPromptDplus/Run2pPb5Tev/5_Systematics/2_MLSelectionEfficiency/cross_sections"
 OutDirRaa=""
 ################################################################################################
 
@@ -317,7 +317,12 @@ if $DoAccEffRw; then
 fi
 
 #compute cross section
+
 if $DoDataDrivenCrossSection; then
+  ### ADD SAFETY: COMMENT import pandas LINE IN ANALYSISUTILS
+  AnalysisUtilsFile="/home/abigot/DmesonAnalysis/utils/AnalysisUtils.py"
+  sed -i 's/import pandas as pd/# import pandas as pd/g' $AnalysisUtilsFile
+
   for (( iCutSet=0; iCutSet<${arraylength}; iCutSet++ ));
   do
     echo $(tput setaf 4) Compute cross section $(tput sgr0)
@@ -327,6 +332,9 @@ if $DoDataDrivenCrossSection; then
       python3 ComputeDataDrivenCrossSection.py ${OutDirRawyields}/RawYields${Particle}${CutSets[$iCutSet]}.root ${OutDirEfficiency}/Eff_times_Acc_${Particle}${CutSets[$iCutSet]}.root ${DataDrivenFractionFileName} ${OutDirCrossSec}/CrossSection${Particle}${CutSets[$iCutSet]}.root --FD --${Particle} --system ${System} --energy 5.02 --batch
     fi
   done
+
+  # uncomment line for future use
+  sed -i 's/# import pandas as pd/import pandas as pd/g' $AnalysisUtilsFile
 fi
 
 #compute HFPtSpectrum

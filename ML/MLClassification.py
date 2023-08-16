@@ -30,6 +30,8 @@ def data_prep(inputCfg, iBin, PtBin, OutPutDirPt, PromptDf, FDDf, BkgDf): #pylin
         out = f'\n     Signal: {nPrompt}\n     Bkg: {nBkg}'
     else:
         out = f'\n     Prompt: {nPrompt}\n     FD: {nFD}\n     Bkg: {nBkg}'
+    OutFileNcands = open(f'{OutPutDirPt}/NumCandInfo_pT_{PtBin[0]}_{PtBin[1]}.txt', 'wt')
+    sys.stdout = OutFileNcands
     print(f'Number of available candidates in {PtBin[0]} < pT < {PtBin[1]} GeV/c:{out}')
 
     dataset_opt = inputCfg['data_prep']['dataset_opt']
@@ -111,6 +113,9 @@ def data_prep(inputCfg, iBin, PtBin, OutPutDirPt, PromptDf, FDDf, BkgDf): #pylin
         print(f'\033[91mERROR: {dataset_opt} is not a valid option!\033[0m')
         sys.exit()
 
+    OutFileNcands.close()
+    sys.stdout = sys.__stdout__
+
     # plots
     VarsToDraw = inputCfg['plots']['plotting_columns']
     LegLabels = [inputCfg['output']['leg_labels']['Bkg'],
@@ -126,14 +131,16 @@ def data_prep(inputCfg, iBin, PtBin, OutPutDirPt, PromptDf, FDDf, BkgDf): #pylin
     plot_utils.plot_distr(ListDf, VarsToDraw, 100, LegLabels, figsize=(12, 7),
                           alpha=0.3, log=True, grid=False, density=True)
     plt.subplots_adjust(left=0.06, bottom=0.06, right=0.99, top=0.96, hspace=0.55, wspace=0.55)
-    plt.savefig(f'{OutPutDirPt}/DistributionsAll_pT_{PtBin[0]}_{PtBin[1]}.pdf')
+    for format in inputCfg['plots']['outfileformat']:
+        plt.savefig(f'{OutPutDirPt}/DistributionsAll_pT_{PtBin[0]}_{PtBin[1]}.{format}')
     plt.close('all')
     #_____________________________________________
     CorrMatrixFig = plot_utils.plot_corr(ListDf, VarsToDraw, LegLabels)
     for Fig, Lab in zip(CorrMatrixFig, OutputLabels):
         plt.figure(Fig.number)
         plt.subplots_adjust(left=0.2, bottom=0.25, right=0.95, top=0.9)
-        Fig.savefig(f'{OutPutDirPt}/CorrMatrix{Lab}_pT_{PtBin[0]}_{PtBin[1]}.pdf')
+        for format in inputCfg['plots']['outfileformat']:
+            Fig.savefig(f'{OutPutDirPt}/CorrMatrix{Lab}_pT_{PtBin[0]}_{PtBin[1]}.{format}')
 
     return TrainTestData, PromptDfSelForEff, FDDfSelForEff
 
@@ -180,11 +187,17 @@ def train_test(inputCfg, PtBin, OutPutDirPt, TrainTestData, iBin): #pylint: disa
         print('Performing hyper-parameters optimisation: ...', end='\r')
         OutFileHypPars = open(f'{OutPutDirPt}/HyperParOpt_pT_{PtBin[0]}_{PtBin[1]}.txt', 'wt')
         sys.stdout = OutFileHypPars
-        ModelHandl.optimize_params_bayes(TrainTestData, BayesOptConfig, metric,
+        # ModelHandl.optimize_params_bayes(TrainTestData, BayesOptConfig, metric,
+        #                                  nfold=inputCfg['ml']['hyper_par_opt']['nfolds'],
+        #                                  init_points=inputCfg['ml']['hyper_par_opt']['initpoints'],
+        #                                  n_iter=inputCfg['ml']['hyper_par_opt']['niter'],
+        #                                  njobs=inputCfg['ml']['hyper_par_opt']['njobs'])
+        ModelHandl.optimize_params_optuna(TrainTestData, BayesOptConfig, 
+                                          cross_val_scoring=metric,
                                          nfold=inputCfg['ml']['hyper_par_opt']['nfolds'],
-                                         init_points=inputCfg['ml']['hyper_par_opt']['initpoints'],
-                                         n_iter=inputCfg['ml']['hyper_par_opt']['niter'],
-                                         njobs=inputCfg['ml']['hyper_par_opt']['njobs'])
+                                         n_jobs=inputCfg['ml']['hyper_par_opt']['njobs'],
+                                         n_trials=inputCfg['ml']['hyper_par_opt']['niter'],
+                                         direction='maximize')
         OutFileHypPars.close()
         sys.stdout = sys.__stdout__
         print('Performing hyper-parameters optimisation: Done!')
@@ -218,24 +231,29 @@ def train_test(inputCfg, PtBin, OutPutDirPt, TrainTestData, iBin): #pylint: disa
                                                     LegLabels, inputCfg['plots']['train_test_log'], density=True)
     if n_classes > 2:
         for Fig, Lab in zip(MLOutputFig, OutputLabels):
-            Fig.savefig(f'{OutPutDirPt}/MLOutputDistr{Lab}_pT_{PtBin[0]}_{PtBin[1]}.pdf')
+            for format in inputCfg['plots']['outfileformat']:
+                Fig.savefig(f'{OutPutDirPt}/MLOutputDistr{Lab}_pT_{PtBin[0]}_{PtBin[1]}.{format}')
     else:
-        MLOutputFig.savefig(f'{OutPutDirPt}/MLOutputDistr_pT_{PtBin[0]}_{PtBin[1]}.pdf')
+        for format in inputCfg['plots']['outfileformat']:
+            MLOutputFig.savefig(f'{OutPutDirPt}/MLOutputDistr_pT_{PtBin[0]}_{PtBin[1]}.{format}')
     #_____________________________________________
     plt.rcParams["figure.figsize"] = (10, 9)
     ROCCurveFig = plot_utils.plot_roc(TrainTestData[3], yPredTest, None, LegLabels, inputCfg['ml']['roc_auc_average'],
                                       inputCfg['ml']['roc_auc_approach'])
-    ROCCurveFig.savefig(f'{OutPutDirPt}/ROCCurveAll_pT_{PtBin[0]}_{PtBin[1]}.pdf')
+    for format in inputCfg['plots']['outfileformat']:
+        ROCCurveFig.savefig(f'{OutPutDirPt}/ROCCurveAll_pT_{PtBin[0]}_{PtBin[1]}.{format}')
     pickle.dump(ROCCurveFig, open(f'{OutPutDirPt}/ROCCurveAll_pT_{PtBin[0]}_{PtBin[1]}.pkl', 'wb'))
     #_____________________________________________
     plt.rcParams["figure.figsize"] = (10, 9)
     ROCCurveTTFig = plot_utils.plot_roc_train_test(TrainTestData[3], yPredTest, TrainTestData[1], yPredTrain, None,
                                                    LegLabels, inputCfg['ml']['roc_auc_average'],
                                                    inputCfg['ml']['roc_auc_approach'])
-    ROCCurveTTFig.savefig(f'{OutPutDirPt}/ROCCurveTrainTest_pT_{PtBin[0]}_{PtBin[1]}.pdf')
+    for format in inputCfg['plots']['outfileformat']:
+        ROCCurveTTFig.savefig(f'{OutPutDirPt}/ROCCurveTrainTest_pT_{PtBin[0]}_{PtBin[1]}.{format}')
     #_____________________________________________
     PrecisionRecallFig = plot_utils.plot_precision_recall(TrainTestData[3], yPredTest, LegLabels)
-    PrecisionRecallFig.savefig(f'{OutPutDirPt}/PrecisionRecallAll_pT_{PtBin[0]}_{PtBin[1]}.pdf')
+    for format in inputCfg['plots']['outfileformat']:
+        PrecisionRecallFig.savefig(f'{OutPutDirPt}/PrecisionRecallAll_pT_{PtBin[0]}_{PtBin[1]}.{format}')
     #_____________________________________________
     plt.rcParams["figure.figsize"] = (12, 7)
     FeaturesImportanceFig = plot_utils.plot_feature_imp(TrainTestData[2][TrainCols], TrainTestData[3], ModelHandl,
@@ -244,9 +262,11 @@ def train_test(inputCfg, PtBin, OutPutDirPt, TrainTestData, iBin): #pylint: disa
     for iFig, Fig in enumerate(FeaturesImportanceFig):
         if iFig < n_plot:
             label = OutputLabels[iFig] if n_classes > 2 else ''
-            Fig.savefig(f'{OutPutDirPt}/FeatureImportance{label}_pT_{PtBin[0]}_{PtBin[1]}.pdf')
+            for format in inputCfg['plots']['outfileformat']:
+                Fig.savefig(f'{OutPutDirPt}/FeatureImportance{label}_pT_{PtBin[0]}_{PtBin[1]}.{format}')
         else:
-            Fig.savefig(f'{OutPutDirPt}/FeatureImportanceAll_pT_{PtBin[0]}_{PtBin[1]}.pdf')
+            for format in inputCfg['plots']['outfileformat']:
+                Fig.savefig(f'{OutPutDirPt}/FeatureImportanceAll_pT_{PtBin[0]}_{PtBin[1]}.{format}')
 
     return ModelHandl
 
@@ -288,7 +308,7 @@ def appl(inputCfg, PtBin, OutPutDirPt, ModelHandl, DataDfPtSel, PromptDfPtSelFor
 
     print('Applying ML model to data dataframe: ...', end='\r')
     yPredData = ModelHandl.predict(DataDfPtSel, inputCfg['ml']['raw_output'])
-    df_column_to_save_list_data = df_column_to_save_list
+    df_column_to_save_list_data = df_column_to_save_list.copy()
     if 'pt_B' in df_column_to_save_list_data:
         df_column_to_save_list_data.remove('pt_B') # only in MC
     DataDfPtSel = DataDfPtSel.loc[:, df_column_to_save_list_data]

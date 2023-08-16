@@ -76,15 +76,16 @@ if not colsToKeep:
 print('Applying selections')
 for PtMin, PtMax in zip(PtMins, PtMaxs):
     dataFramePtCut = dataFrame.query(f'pt_cand > {PtMin} & pt_cand < {PtMax}')
+    print('Preselections')
     if preSelections:
         dataFramePtCutSel = dataFramePtCut.astype(float).query(preSelections)
         del dataFramePtCut
     else:
         dataFramePtCutSel = dataFramePtCut
-
+    print('Missing values')
     if cfg['missingvalues']['enable']:
         dataFramePtCutSel = dataFramePtCutSel.replace(cfg['missingvalues']['toreplace'], value=np.nan)
-
+    print('Singletrackvars')
     if cfg['singletrackvars'] and cfg['singletrackvars']['addAODfiltervars']:
         # this assumes that we are analysing a 3 prong!
         if set(['pt_prong0', 'pt_prong1', 'pt_prong2']).issubset(dataFramePtCutSel.columns):

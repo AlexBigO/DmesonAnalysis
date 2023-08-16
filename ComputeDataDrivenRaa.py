@@ -8,8 +8,9 @@ import sys
 import argparse
 import numpy as np
 
-from ROOT import gROOT, TFile, TGraphErrors, TCanvas, TLine # pylint: disable=import-error,no-name-in-module
+from ROOT import gROOT, TFile, TGraphErrors, TCanvas, TLine, TLegend, TLatex # pylint: disable=import-error,no-name-in-module
 from utils.StyleFormatter import SetGlobalStyle, SetObjectStyle, GetROOTColor
+from utils.AnalysisUtils import ComputeRatioDiffBins
 
 parser = argparse.ArgumentParser(description='Arguments to pass')
 parser.add_argument('corrYieldFileName', metavar='text', default='corrYieldFile.root',
@@ -18,7 +19,7 @@ parser.add_argument('ppCrossSecFileName', metavar='text', default='ppCrossSecFil
                     help='root file with pp reference cross section')
 parser.add_argument('outFileName', metavar='text', default='outFile.root', help='root output file name')
 parser.add_argument('--energy', metavar='text', default='5.02', help='energy (5.02)')
-parser.add_argument('--centrality', metavar='text', default='010', help='centrality class (010, 3050, 6080)')
+parser.add_argument('--centrality', metavar='text', default='0100', help='centrality class (0100, 010, 3050, 6080)')
 parser.add_argument("--batch", action='store_true', help='suppress video output', default=False)
 args = parser.parse_args()
 
@@ -36,6 +37,11 @@ elif args.centrality == '3050':
 elif args.centrality == '6080':
     taa = 0.4188
     taaUnc = 0.0106
+elif args.centrality == '0100':
+    taa = 208
+    taaUnc = 0.
+    # taa = 0.09923
+    # taaUnc = 0.0017
 else:
     print('ERROR: Only 0-10, 30-50 and 60-80 centrality classes implemented! Exit')
     sys.exit()
@@ -45,7 +51,7 @@ corrYieldFile = TFile.Open(args.corrYieldFileName)
 hCorrYieldPbPb =  corrYieldFile.Get('hCorrYield')
 hCorrYieldPbPb.SetName('hCorrYieldPbPb')
 gCorrYieldPbPbSystTot = corrYieldFile.Get('gCorrYieldSystTot')
-gCorrYieldPbPbSystTot.SetName('gCorrYieldSystTotPbPb')
+gCorrYieldPbPbSystTot.SetName('gCorrYieldSystTotpPb')
 systErrPbPb = corrYieldFile.Get('AliHFSystErr')
 systErrPbPb.SetName('AliHFSystErrPbPb')
 
@@ -58,27 +64,48 @@ gCrossSectionPPSystLumi = ppCrossSecFile.Get('gCrossSectionSystLumi')
 systErrPP = ppCrossSecFile.Get('AliHFSystErr')
 systErrPP.SetName('AliHFSystErrPP')
 
+rapidityCorrectionFile = TFile.Open("/home/abigot/AnalysisNonPromptDplus/Run2pPb5Tev/4_Analysis/6_RpPb/rapidity_correction/rapidity_correction_rebinned_2_16.root")
+hRapidityCorrection = rapidityCorrectionFile.Get('hYCorrection_central')
+
 # TODO: improve protection checking the limits of the bins besides the number
-if hCorrYieldPbPb.GetNbinsX() != hCrossSectionPP.GetNbinsX():
-    print('ERROR: inconsistent number of bins in input objects! Exit')
-    sys.exit()
+# if hCorrYieldPbPb.GetNbinsX() != hCrossSectionPP.GetNbinsX():
+#     print('ERROR: inconsistent number of bins in input objects! Exit')
+#     sys.exit()
 
-hRaa = hCorrYieldPbPb.Clone('hRaa')
-hRaa.SetTitle(';#it{p}_{T} (GeV/#it{c}); #it{R}_{AA}')
-hRaa.Divide(hCrossSectionPP)
-hRaa.Scale(1.e3 / taa) #convert Taa to 1 / ub
+# hRaa = hCorrYieldPbPb.Clone('hRaa')
+# hRaa.Divide(hCrossSectionPP)
 
-gRaaSystTot = TGraphErrors(0)
+# compute RpPb
+hRaa = ComputeRatioDiffBins(hCorrYieldPbPb, hCrossSectionPP)
+
+# apply rapidity correction
+for iPt in range(hRaa.GetNbinsX()):
+    raa = hRaa.GetBinContent(iPt+1)
+    raa_statunc = hRaa.GetBinError(iPt+1)
+    y_correction = hRapidityCorrection.GetBinContent(iPt+1)
+    hRaa.SetBinContent(iPt+1, raa / y_correction)
+    hRaa.SetBinError(iPt+1, raa_statunc / y_correction)
+
+# hRaa = ComputeRatioDiffBins(hRaa, hRapidityCorrection)
+# hRaa.Divide(hRapidityCorrection)
+
+# name settings
+hRaa.SetName('hRpPb')
+hRaa.SetTitle(';#it{p}_{T} (GeV/#it{c}); #it{R}_{pPb}')
+# hRaa.Scale(1.e3 / taa) #convert Taa to 1 / ub
+hRaa.Scale(1. / taa)
+
+gRaaSystTot = TGraphErrors(1)
 gRaaSystTot.SetName('gRaaSystTot')
 gRaaSystTot.SetTitle(';#it{p}_{T} (GeV/#it{c}); #it{R}_{AA}')
 SetObjectStyle(gRaaSystTot, color=GetROOTColor('kBlack'), fillstyle=0)
-gRaaSystTaa = TGraphErrors(0)
+gRaaSystTaa = TGraphErrors(1)
 gRaaSystTaa.SetName('gRaaSystTaa')
 gRaaSystTaa.SetTitle('Taa syst. unc.;;')
 gRaaSystTaa.SetPoint(0, 1., 1.)
 gRaaSystTaa.SetPointError(0, 0.4, taaUnc / taa)
 SetObjectStyle(gRaaSystTaa, color=GetROOTColor('kBlue'), fillstyle=0)
-gRaaSystNorm = TGraphErrors(0)
+gRaaSystNorm = TGraphErrors(1)
 gRaaSystNorm.SetName('gRaaSystNorm')
 gRaaSystNorm.SetTitle('Normalization syst. unc. (pp norm. + Taa);;')
 gRaaSystNorm.SetPoint(0, 1., 1.)
@@ -102,14 +129,26 @@ gROOT.SetBatch(args.batch)
 SetGlobalStyle(padleftmargin=0.18, padbottommargin=0.14)
 
 cRaa = TCanvas('cRaa', '', 700, 800)
-hRaa.GetYaxis().SetRangeUser(0., 2.)
-hRaa.Draw()
+hRaa.GetYaxis().SetRangeUser(0., 2.7)
+hRaa.Draw('same')
 gRaaSystTot.Draw('2')
 line = TLine(hRaa.GetXaxis().GetXmin(), 1., hRaa.GetXaxis().GetXmax(), 1.)
 line.SetLineColor(GetROOTColor('kBlack'))
 line.SetLineStyle(9)
 line.SetLineWidth(2)
 line.Draw("same")
+
+# description = TLatex()
+# description.SetTextSize(0.045)
+# description.DrawLatex(0.3, 0.9, "ALICE")
+
+leg = TLegend(0.60, 0.1, 0.84, 0.3)
+leg.SetBorderSize(0)
+leg.SetFillStyle(0)
+leg.SetTextSize(0.045)
+leg.AddEntry(hRaa, 'Non-prompt D^{+}', 'l')
+leg.Draw()
+
 cRaa.Update()
 
 outFile = TFile(args.outFileName, 'recreate')

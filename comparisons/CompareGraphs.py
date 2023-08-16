@@ -218,7 +218,7 @@ for iFile, (inFileName, objName, objType, scale, lambdaParam, normalize, color, 
 
     leg.AddEntry(hToCompare[iFile], legNames[iFile], legOpt[iFile])
 
-ratios, RMS, shift = [], [], []
+ratios, RMS, shift, RMS_shift = [], [], [], []
 if doRatio and displayRMS:
     if 'TH' in objType:
         nPoints = hRatioToCompare[1].GetNbinsX()
@@ -237,8 +237,10 @@ if doRatio and displayRMS:
         aRatios = np.array(ratios[iBin])
         RMS.append(np.std(aRatios))
         shift.append(np.mean(aRatios))
+        RMS_shift.append(np.sqrt( np.std(aRatios)*np.std(aRatios) + (np.mean(aRatios)-1)*(np.mean(aRatios)-1)  ))
 print('\033[92mRMS values:', np.around(RMS, decimals=3), '\033[0m')
 print('\033[92mshift values:', np.around(shift, decimals=3) - 1., '\033[0m')
+print('\033[92msqrt{RMS^2 + shift^2}:', np.around(RMS_shift, decimals=3), '\033[0m')
 
 cOut = TCanvas('cOutput', '', wCanv, hCanv)
 

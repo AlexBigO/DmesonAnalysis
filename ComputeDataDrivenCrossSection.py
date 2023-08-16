@@ -9,10 +9,16 @@ import sys
 import argparse
 import numpy as np
 # Define arguments (systematic uncertainties from AliHFSystErr)
+# print("PASSED")
 from ROOT import TFile, TCanvas, TLegend, TGraphErrors, gROOT  # pylint: disable=import-error,no-name-in-module
+# print("PASSED2")
 from ROOT import AliHFSystErr  # pylint: disable=import-error,no-name-in-module
+# print("PASSED3")
 from utils.AnalysisUtils import ComputeCrossSection, GetPromptFDFractionCutSet
+# print("PASSED4")
 from utils.StyleFormatter import SetGlobalStyle, SetObjectStyle, GetROOTColor
+# print("PASSED5")
+
 
 parser = argparse.ArgumentParser(description='Arguments to pass')
 parser.add_argument('rawYieldFileName', metavar='text', default='rawYieldFile.root', help='root file with raw yields')
@@ -23,7 +29,7 @@ parser.add_argument('fracFileName', metavar='text', default='fracFile.root',
 parser.add_argument('outFileName', metavar='text', default='outFile.root', help='root output file name')
 parser.add_argument('--system', metavar='text', default='pp', help='collision system (pp, pPb, PbPb)')
 parser.add_argument('--energy', metavar='text', default='5.02', help='energy (5.02)')
-parser.add_argument('--centrality', metavar='text', default='010', help='centrality (010, 3050)')
+parser.add_argument('--centrality', metavar='text', default='0100', help='centrality (010, 3050)')
 parser.add_argument("--batch", action='store_true', help='suppress video output', default=False)
 parser.add_argument('--propOpt', metavar='text', default=None)
 
@@ -79,6 +85,17 @@ elif args.system == 'PbPb':
     systErr.SetCollisionType(1)
     systErr.SetRunNumber(18)
     sigmaMB = 1. # yields in case of PbPb
+elif args.system == 'pPb':
+    axisTitle = ';#it{p}_{T} (GeV/#it{c}); d^{2}#sigma/d#it{p}_{T}d#it{y} #times BR  (#mub GeV^{-1} #it{c})'
+    histoName = 'CorrYield'
+    if args.centrality in ['0100']:
+        systErr.SetCentrality(args.centrality)
+    else:
+        print('ERROR: only 0100 centrality class (MB) implemented! Exit')
+        sys.exit()
+    systErr.SetCollisionType(2)
+    systErr.SetRunNumber(16)
+    sigmaMB = 2.09e+06 # ub
 
 if args.Dplus:
     systErr.Init(2)
@@ -176,8 +193,9 @@ for iPt in range(hCrossSection.GetNbinsX()):
         uncFrac = uncFracPromptFD[1]
 
     # TODO: check if uncorrelated is the right option or anti-correlated is better
+    branching_ratio = 1. # 0.0938
     crossSec, crossSecUnc = ComputeCrossSection(rawYield, rawYieldUnc, frac, uncFrac, effAcc,
-                                                ptMax - ptMin, 1., sigmaMB, nEv, 1.,
+                                                ptMax - ptMin, 1., sigmaMB, nEv, branching_ratio,
                                                 propOpt) # TODO:check this
 
     hCrossSection.SetBinContent(iPt+1, crossSec)

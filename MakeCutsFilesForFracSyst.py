@@ -5,6 +5,7 @@ python script to create yaml files with set of cuts for cut-variation studies
 import os
 import argparse
 import copy
+import math
 from itertools import product
 import yaml
 
@@ -82,27 +83,90 @@ def make_cuts():
                 yaml.dump(cutset_mod, outfile_mod, default_flow_style=False)
 
 def make_cuts_ml():
-    var_key = ['ML_output_FD'] # ['ML_output_FD', 'ML_output_Bkg']
-    var_tag = ['FD'] # ['outFD', 'outBkg'] # used in file names to reduce length
-    step_variation = [{"2": 0.02, "3": 0.02, "4": 0.02, "5": 0.02, "6": 0.02, "8": 0.02, "10": 0.02, "12": 0.02, "16": 0.02, "24": 0.02}]
-        # {"2": 0.0001, "3": 0.00005, "4": 0.00005, "5": 0.00005, "6": 0.0001, "8": 0.0002, "12": 0.002, "16": 0.002, "24": 0.002, "36": 0.001}]
-        # {"2": 0.00005, "3": 0.00005, "4": 0.00005, "5": 0.00005, "6": 0.0001, "8": 0.0002, "12": 0.002, "16": 0.002, "24": 0.002, "36": 0.001} 0-10%
-        # {"2": 0.0001, "3": 0.0001, "4": 0.0001, "5": 0.0001, "6": 0.0002, "8": 0.001, "12": 0.002, "16": 0.002, "24": 0.002, "36": 0.001} 30-50%
-        # [{"2": 0.01, "4": 0.01, "6": 0.01, "8": 0.01, "12": 0.01},
-        #  {"2": 0.0005, "4": 0.0005, "6": 0.001, "8": 0.001, "12": 0.0005}]
-    num_step_pos = 19
-    num_step_neg = 0
-    edge_to_vary = ['min'] # ['min', 'max']
+    doCentral=False
+    doWideLeft = True
+    doWideRight = False
+    doWideLeftRight = False
+    doNarrowLeft = False
+    doNarrowRight = False
+    doNarrowLeftRight = False
+    doWideStep = False
+    doNarrowStep = False
 
-    in_dir = '/home/abigot/AnalysisNonPromptDplus/Run2pPb5Tev/3_ApplySelections/'
-    cut_file_central = 'cutset_default_for_cut_variation.yml'
-    out_dir = '/home/abigot/AnalysisNonPromptDplus/Run2pPb5Tev/3_ApplySelections/cutsets/'
+    var_key = ['ML_output_FD'] #, 'ML_output_Bkg']
+    var_tag = ['outFD'] # , 'outBkg'] # used in file names to reduce length
+
+    edge_to_vary = ['min']
+
+    in_dir = '/home/abigot/AnalysisNonPromptDplus/Run2pPb5Tev/5_Systematics/3_NonpromptFractionEstimation/'
+    # cutset configuration files
+    cut_file_central = 'cutset_central.yml'
+    cut_file_wide_left = 'cutset_wide_left.yml'
+    cut_file_wide_right = 'cutset_wide_right.yml'
+    cut_file_wide_left_right = 'cutset_wide_left_right.yml'
+    cut_file_narrow_left = 'cutset_narrow_left.yml'
+    cut_file_narrow_right = 'cutset_narrow_right.yml'
+    cut_file_narrow_left_right = 'cutset_narrow_left_right.yml'
+    cut_file_wide_step = 'cutset_wide_step.yml'
+    cut_file_narrow_step = 'cutset_narrow_step.yml'
+
+    # output directories
+    # out_dir_central = '/home/abigot/AnalysisNonPromptDplus/Run2pPb5Tev/5_Systematics/3_NonpromptFractionEstimation/cutsets_central/'
+    out_dir_central = '/home/abigot/AnalysisNonPromptDplus/Run2pPb5Tev/5_Systematics/3_NonpromptFractionEstimation/central/cutsets/'
+    out_dir_wide_left = '/home/abigot/AnalysisNonPromptDplus/Run2pPb5Tev/5_Systematics/3_NonpromptFractionEstimation/wide_left/cutsets/'
+    out_dir_wide_right = '/home/abigot/AnalysisNonPromptDplus/Run2pPb5Tev/5_Systematics/3_NonpromptFractionEstimation/wide_right/cutsets/'
+    out_dir_wide_left_right = '/home/abigot/AnalysisNonPromptDplus/Run2pPb5Tev/5_Systematics/3_NonpromptFractionEstimation/wide_left_right/cutsets/'
+    out_dir_narrow_left = '/home/abigot/AnalysisNonPromptDplus/Run2pPb5Tev/5_Systematics/3_NonpromptFractionEstimation/narrow_left/cutsets/'
+    out_dir_narrow_right = '/home/abigot/AnalysisNonPromptDplus/Run2pPb5Tev/5_Systematics/3_NonpromptFractionEstimation/narrow_right/cutsets/'
+    out_dir_narrow_left_right = '/home/abigot/AnalysisNonPromptDplus/Run2pPb5Tev/5_Systematics/3_NonpromptFractionEstimation/narrow_left_right/cutsets/'
+    out_dir_wide_step = '/home/abigot/AnalysisNonPromptDplus/Run2pPb5Tev/5_Systematics/3_NonpromptFractionEstimation/wide_step/cutsets/'
+    out_dir_narrow_step = '/home/abigot/AnalysisNonPromptDplus/Run2pPb5Tev/5_Systematics/3_NonpromptFractionEstimation/narrow_step/cutsets/'
+
     out_file_tag = 'cutset_pPb5Tev'
+
+    if doCentral:
+        cut_file = cut_file_central
+        out_dir = out_dir_central
+    elif doWideLeft:
+        cut_file = cut_file_wide_left
+        out_dir = out_dir_wide_left
+    elif doWideRight:
+        cut_file = cut_file_wide_right
+        out_dir = out_dir_wide_right
+    elif doWideLeftRight:
+        cut_file = cut_file_wide_left_right
+        out_dir = out_dir_wide_left_right
+    elif doNarrowLeft:
+        cut_file = cut_file_narrow_left
+        out_dir = out_dir_narrow_left
+    elif doNarrowRight:
+        cut_file = cut_file_narrow_right
+        out_dir = out_dir_narrow_right
+    elif doNarrowLeftRight:
+        cut_file = cut_file_narrow_left_right
+        out_dir = out_dir_narrow_left_right
+    elif doWideStep:
+        cut_file = cut_file_wide_step
+        out_dir = out_dir_wide_step
+    elif doNarrowStep:
+        cut_file = cut_file_narrow_step
+        out_dir = out_dir_narrow_step
 
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
-    with open(in_dir + cut_file_central, 'r') as cut_file_yml:
+    with open(in_dir + cut_file, 'r') as cut_file_yml:
         cutset = yaml.load(cut_file_yml, yaml.FullLoader)
+
+
+    # define automatically the number of steps
+    cuts = cutset['cutvars'][var_key[0]]
+    cutting_range_min, cutting_range_max = cuts['cutting_range']['min'], cuts['cutting_range']['max']
+    print(f"Min: {cutting_range_min}, max: {cutting_range_max}")
+    step_variation = cuts['cutting_range']['step']
+    num_step_neg = 0 # by definition here
+    num_step_pos = math.ceil((cutting_range_max - cutting_range_min) / step_variation)
+    print((cutting_range_max - cutting_range_min) / step_variation)
+    print(f"num_step_pos: {num_step_pos}")
 
     #same number of steps for all variables
     neg_steps = [-i for i in range(1, num_step_neg + 1)]
@@ -120,11 +184,11 @@ def make_cuts_ml():
             cuts = cutset_mod['cutvars'][var_key[i]]
             for min_val, max_val, pt_min in zip(cuts['min'], cuts['max'], cutset_mod['cutvars']['Pt']['min']):
                 if edge_to_vary[i] == 'min':
-                    new_value = min_val + step * step_variation[i][f'{pt_min:.0f}']
+                    new_value = min_val + step * step_variation #step_variation[i][f'{pt_min:.0f}']
                     if(new_value < 0. or new_value >= max_val):
                         new_value = min_val
                 else:
-                    new_value = max_val + step * step_variation[i][f'{pt_min:.0f}']
+                    new_value = max_val + step * step_variation #step_variation[i][f'{pt_min:.0f}']
                     if(new_value > 1. or new_value <= min_val):
                         new_value = max_val
                 modified_list.append(new_value)

@@ -9,25 +9,27 @@ import os
 from itertools import product
 import numpy as np
 import yaml
-from ROOT import TFile, TH1F, TH2F, TCanvas, TLegend, TGraphAsymmErrors, TLatex, gRandom, TF1  # pylint: disable=import-error,no-name-in-module
+from ROOT import TFile, TH1F, TH2F, TCanvas, TLegend, TGraphAsymmErrors, TLatex, gRandom, TF1, gROOT  # pylint: disable=import-error,no-name-in-module
 from ROOT import kBlack, kRed, kAzure, kGreen, kRainBow # pylint: disable=import-error,no-name-in-module
 from ROOT import kFullCircle, kFullSquare, kOpenSquare, kOpenCircle, kOpenCross, kOpenDiamond # pylint: disable=import-error,no-name-in-module
 from utils.AnalysisUtils import GetPromptFDFractionFc, GetFractionNb
 from utils.AnalysisUtils import GetPromptFDYieldsAnalyticMinimisation, ApplyVariationToList
 from utils.ReadModel import ReadTAMU, ReadPHSD, ReadMCatsHQ, ReadCatania
-from utils.StyleFormatter import SetGlobalStyle, SetObjectStyle
+from utils.StyleFormatter import SetGlobalStyle, SetObjectStyle, DivideCanvas
 
 parser = argparse.ArgumentParser(description='Arguments to pass')
 parser.add_argument('cfgFileName', metavar='text', default='cfgFileName.yml',
                     help='config file name with root input files')
 parser.add_argument('outFileName', metavar='text', default='outFile.root',
                     help='output root file name')
+parser.add_argument("--batch", action='store_true', help='suppress video output', default=False)
 args = parser.parse_args()
 
 outFileNameEffPDF = args.outFileName.replace('.root', '_Eff.pdf')
 outFileNameDistrPDF = args.outFileName.replace('.root', '_Distr.pdf')
 outFileNameFracPDF = args.outFileName.replace('.root', '_Frac.pdf')
 outFileNameCorrMatrixPDF = args.outFileName.replace('.root', '_CorrMatrix.pdf')
+outFileNameFullPlot = args.outFileName.replace('.root', '_FullPlot')
 
 with open(args.cfgFileName, 'r') as ymlCutSetFile:
     cutSetCfg = yaml.load(ymlCutSetFile, yaml.FullLoader)
@@ -145,6 +147,7 @@ if compareToFc or compareToNb:
     if compareToNb:
         sigmaMB = cutSetCfg['theorydriven']['sigmaMB']
 
+gROOT.SetBatch(args.batch)
 SetGlobalStyle(padleftmargin=0.15, padtopmargin=0.08, titleoffsetx=1.,
                titleoffsety=1.4, opttitle=1, palette=kRainBow, maxdigits=2)
 
@@ -179,6 +182,7 @@ SetObjectStyle(hCorrYieldFD, color=kAzure+4, fillcolor=kAzure+4, markerstyle=kFu
 
 hCovCorrYields = [[hRawYields[0].Clone('hCovPromptPrompt'), hRawYields[0].Clone('hCovPromptFD')],
                   [hRawYields[0].Clone('hCovFDPrompt'), hRawYields[0].Clone('hCovFDFD')]]
+
 for iRow, row in enumerate(hCovCorrYields):
     for iCol, hCov in enumerate(row):
         SetObjectStyle(hCov, linecolor=kBlack)
@@ -197,6 +201,8 @@ hEffPromptVsCut, hEffFDVsCut, cEff = [], [], []
 hPromptFracVsCut, hFDFracVsCut, gPromptFracFcVsCut, gFDFracFcVsCut, gPromptFracNbVsCut, \
     gFDFracNbVsCut, cFrac = [], [], [], [], [], [], []
 hCorrMatrixCutSets, cCorrMatrix = [], []
+
+my_chisquare = []
 
 if cutSetCfg['linearplot']['enable']:
     fNfdNprompt = []
@@ -270,6 +276,8 @@ for iPt in range(hRawYields[0].GetNbinsX()):
     corrYields, covMatrixCorrYields, chiSquare, matrices = \
         GetPromptFDYieldsAnalyticMinimisation(listEffPrompt, listEffFD, listRawYield, listEffPromptUnc, listEffFDUnc,
                                               listRawYieldUnc, cutSetCfg['minimisation']['correlated'])
+
+    my_chisquare.append(chiSquare)
 
     hCorrYieldPrompt.SetBinContent(iPt+1, corrYields.item(0))
     hCorrYieldPrompt.SetBinError(iPt+1, np.sqrt(covMatrixCorrYields.item(0, 0)))
@@ -472,7 +480,8 @@ for iPt in range(hRawYields[0].GetNbinsX()):
             legFrac.SetY1(0.83 - deltaY)
 
     cEff.append(TCanvas(f'cEff_{ptString}', '', 800, 800))
-    cEff[iPt].DrawFrame(0.5, hEffPromptVsCut[iPt].GetMinimum()/5, nSets + 0.5, 1., f'{commonString};efficiency')
+    ymin = hEffPromptVsCut[iPt].GetMinimum()/5 if hEffPromptVsCut[iPt].GetMinimum() != 0 else 1.e-5
+    cEff[iPt].DrawFrame(0.5, ymin, nSets + 0.5, 1., f'{commonString};efficiency')
     cEff[iPt].SetLogy()
     hEffPromptVsCut[iPt].DrawCopy('same')
     hEffFDVsCut[iPt].DrawCopy('same')
@@ -544,6 +553,7 @@ for iPt in range(hRawYields[0].GetNbinsX()):
         cDistr[iPt].SaveAs(f'{outFileNameDistrPDF}[')
         cFrac[iPt].SaveAs(f'{outFileNameFracPDF}[')
         cCorrMatrix[iPt].SaveAs(f'{outFileNameCorrMatrixPDF}[')
+
     cEff[iPt].SaveAs(outFileNameEffPDF)
     cDistr[iPt].SaveAs(outFileNameDistrPDF)
     cFrac[iPt].SaveAs(outFileNameFracPDF)
@@ -557,4 +567,54 @@ for iPt in range(hRawYields[0].GetNbinsX()):
         for iformat in cutSetCfg['linearplot']['outfileformat']:
             outFileNameLinPlot = args.outFileName.replace('.root', f'_LinearPlot{iPt+1}_{iPt+2}.{iformat}')
             cLinearPlot[iPt].SaveAs(f'{outFileNameLinPlot}')
-input('Press enter to exit')
+
+cTot = []
+for iPt in range(hRawYields[0].GetNbinsX()):
+    ptMin = hRawYields[0].GetBinLowEdge(iPt+1)
+    ptMax = ptMin + hRawYields[0].GetBinWidth(iPt+1)
+    commonString = f'{ptMin:.0f} < #it{{p}}_{{T}} < {ptMax:.0f}  GeV/#it{{c}};cut set'
+    cTot.append(TCanvas(f"Tot_{iPt}", "", 1000, 1000))
+    cTot[iPt].Divide(2,2)
+    cTot[iPt].cd(1).DrawFrame(0.5, 0., nSets + 0.5, hRawYieldsVsCut[iPt].GetMaximum() * 1.2,
+                                        f'{commonString};raw yield')
+    hFrameDistr = cTot[iPt].cd(1).DrawFrame(0.5, 0., nSets + 0.5, hRawYieldsVsCut[iPt].GetMaximum() * 1.2,
+                                        f'{commonString};raw yield')
+    # cTot[iPt].cd(1)
+    hFrameDistr.GetYaxis().SetDecimals()
+    hRawYieldsVsCut[iPt].Draw('same')
+    hRawYieldPromptVsCut[iPt].DrawCopy('histsame')
+    hRawYieldFDVsCut[iPt].DrawCopy('histsame')
+    hRawYieldsVsCutReSum[iPt].Draw('same')
+    legDistr.Draw()
+    latInfo.DrawLatex(0.47, 0.65, f'#chi^{{2}} / ndf = {my_chisquare[iPt]:.3f}')
+
+    cTot[iPt].cd(2).SetRightMargin(0.14)
+    hCorrMatrixCutSets[iPt].Draw('colz')
+
+    ymin = hEffPromptVsCut[iPt].GetMinimum()/5 if hEffPromptVsCut[iPt].GetMinimum() != 0 else 1.e-5
+
+    hFrameEff = cTot[iPt].cd(3).DrawFrame(0.5, ymin, nSets + 0.5, 1., f'{commonString};efficiency')
+    # cTot[iPt].cd(3)
+    cTot[iPt].cd(3).SetLogy()
+    hEffPromptVsCut[iPt].DrawCopy('same')
+    hEffFDVsCut[iPt].DrawCopy('same')
+    legEff.Draw()
+
+    cTot[iPt].cd(4).DrawFrame(0.5, 0., nSets + 0.5, 1.8, f'{commonString};fraction')
+    hPromptFracVsCut[iPt].DrawCopy('Esame')
+    hFDFracVsCut[iPt].DrawCopy('Esame')
+    if compareToFc:
+        gPromptFracFcVsCut[iPt].Draw('2PZ')
+        gFDFracFcVsCut[iPt].Draw('2PZ')
+    if compareToNb:
+        gPromptFracNbVsCut[iPt].Draw('2PZ')
+        gFDFracNbVsCut[iPt].Draw('2PZ')
+    legFrac.Draw()
+
+    cTot[iPt].Update()
+    cTot[iPt].Modified()
+    cTot[iPt].SaveAs(f"{outFileNameFullPlot}_pt_{ptMin * 10:.0f}_{ptMax * 10:.0f}.svg")
+    cTot[iPt].SaveAs(f"{outFileNameFullPlot}_pt_{ptMin * 10:.0f}_{ptMax * 10:.0f}.pdf")
+
+if not args.batch:
+    input('Press enter to exit')

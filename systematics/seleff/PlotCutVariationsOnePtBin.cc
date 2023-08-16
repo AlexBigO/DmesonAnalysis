@@ -46,7 +46,10 @@ void PlotCutVariationsOnePtBin(TString cfgFileName) {
   
     // load inputs
     YAML::Node config = YAML::LoadFile(cfgFileName.Data());
-    string inDirName = config["inputs"]["directory"].as<string>();
+    string inDirNameCutsets = config["inputs"]["directories"]["cutsets"].as<string>();
+    string inDirNameRawY = config["inputs"]["directories"]["rawyields"].as<string>();
+    string inDirNameEff = config["inputs"]["directories"]["efficiencies"].as<string>();
+    string inDirNameCrossSec = config["inputs"]["directories"]["cross_sections"].as<string>();
     string inCommonFileNameRawY = config["inputs"]["commonfilenames"]["rawyield"].as<string>();
     string inCommonFileNameEff = config["inputs"]["commonfilenames"]["efficiency"].as<string>();
     string inCommonFileNameCrossSec = config["inputs"]["commonfilenames"]["crosssection"].as<string>();
@@ -83,7 +86,7 @@ void PlotCutVariationsOnePtBin(TString cfgFileName) {
 
     for(unsigned int iFile=0; iFile<nFiles; iFile++) {
         
-        TFile* infile_crossec = TFile::Open(Form("%s/%s%s.root",inDirName.data(),Form("%s",inCommonFileNameCrossSec.data()),cutSetSuffix[iFile].data()));
+        TFile* infile_crossec = TFile::Open(Form("%s/%s%s.root",inDirNameCrossSec.data(),Form("%s",inCommonFileNameCrossSec.data()),cutSetSuffix[iFile].data()));
         if(!infile_crossec)
             return;
         hCrossSection[iFile] = (TH1D*)infile_crossec->Get("hAAC");
@@ -111,7 +114,7 @@ void PlotCutVariationsOnePtBin(TString cfgFileName) {
             }
         }
         if(!hCrossSection[iFile]) {
-            hCrossSection[iFile] = (TH1D*)infile_crossec->Get("hCrossSection");
+            hCrossSection[iFile] = (TH1D*)infile_crossec->Get("hCorrYield"); // ("hCrossSection");
             hPromptFrac[iFile] = (TH1D*)infile_crossec->Get("hPromptFrac");
             hFDFrac[iFile] = (TH1D*)infile_crossec->Get("hFDFrac");
         }
@@ -124,7 +127,7 @@ void PlotCutVariationsOnePtBin(TString cfgFileName) {
         hPromptFrac[iFile]->SetDirectory(0);
         hFDFrac[iFile]->SetDirectory(0);
         
-        TFile* infile_rawyield = TFile::Open(Form("%s/%s%s.root",inDirName.data(),Form("%s",inCommonFileNameRawY.data()),cutSetSuffix[iFile].data()));
+        TFile* infile_rawyield = TFile::Open(Form("%s/%s%s.root",inDirNameRawY.data(),Form("%s",inCommonFileNameRawY.data()),cutSetSuffix[iFile].data()));
         if(!infile_rawyield)
             return;
         hRawYield[iFile] = (TH1D*)infile_rawyield->Get("hRawYields");
@@ -137,7 +140,7 @@ void PlotCutVariationsOnePtBin(TString cfgFileName) {
         hchi2[iFile]->SetDirectory(0);
         infile_rawyield->Close();
 
-        TFile* infile_eff = TFile::Open(Form("%s/%s%s.root",inDirName.data(),Form("%s",inCommonFileNameEff.data()),cutSetSuffix[iFile].data()));
+        TFile* infile_eff = TFile::Open(Form("%s/%s%s.root",inDirNameEff.data(),Form("%s",inCommonFileNameEff.data()),cutSetSuffix[iFile].data()));
         if(!infile_eff)
             return;
         hEffPrompt[iFile] = (TH1D*)infile_eff->Get("hEffPrompt");
@@ -423,7 +426,7 @@ void PlotCutVariationsOnePtBin(TString cfgFileName) {
         gCrossSectionCent[iPt]->Draw("2");
         gCrossSectionVsCutSet[iPt]->Draw("PZ");
         legCross->Draw("same");
-        cOutPut[iPt]->cd(7)->DrawFrame(0.55,0.,1.45,hCrossSectionRatioDist[iPt]->GetMaximum()*1.5, Form(";(%s) / (%s)_{central};entries", crossSectionTitle.Data(), crossSectionTitle.Data()));
+        cOutPut[iPt]->cd(7)->DrawFrame(0.55,0.,1.45,hCrossSectionRatioDist[iPt]->GetMaximum()*1.5, Form("%d;(%s) / (%s)_{central};entries", iPt, crossSectionTitle.Data(), crossSectionTitle.Data()));
         hCrossSectionRatioDist[iPt]->Draw("same");
         bCrossSectionSyst[iPt]->Draw("same");
         bCrossSectionRMS[iPt]->Draw("same");

@@ -133,13 +133,13 @@ cShapesD.SaveAs(f'{outDir}/PtWeightsD{outSuffix}.pdf')
 if enableBweights:
     cShapesB = TCanvas('cShapesB', '', 1000, 500)
     cShapesB.Divide(2, 1)
-    cShapesB.cd(1).DrawFrame(0, hPtDistrB['pythia'].GetMinimum()*0.1, ptMax*2, hPtDistrD['pythia'].GetMaximum()*10,
-                             ';#it{p}_{T}^{B} (GeV/#it{c}); d#it{N}/d#it{p}_{T}^{B} (a. u.)')
+    cShapesB.cd(1).DrawFrame(0, hPtDistrB['fonll'].GetMinimum()*0.1, ptMax, hPtDistrD['pythia'].GetMaximum()*10,
+                             ';#it{p}_{T}^{B} (GeV/#it{c}); d#it{N}/d#it{p}_{T}^{B} (a. u.)')  # hPtDistrB['pythia'].GetMinimum()*0.1
     cShapesB.cd(1).SetLogy()
     for model in hPtDistrB:
         hPtDistrB[model].DrawCopy('chistsame')
     leg.Draw()
-    cShapesB.cd(2).DrawFrame(0, 0.5, ptMax*2, 1.5, ';#it{p}_{T}^{B} (GeV/#it{c}); #it{p}_{T}^{B} weights')
+    cShapesB.cd(2).DrawFrame(0, 0.5, ptMax, 1.5, ';#it{p}_{T}^{B} (GeV/#it{c}); #it{p}_{T}^{B} weights')
     lineatoneWeightB.Draw('same')
     for model in hPtWeightsB:
         hPtWeightsB[model].DrawCopy('chistsame')

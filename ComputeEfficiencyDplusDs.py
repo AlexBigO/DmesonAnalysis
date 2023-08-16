@@ -39,6 +39,10 @@ elif args.centClass == 'kpp13TeVPrompt':
     cent = 'pp13TeVPrompt'
 elif args.centClass == 'kpp13TeVFD':
     cent = 'pp13TeVFD'
+elif args.centClass == 'kpPb5TeVPrompt':
+    cent = 'pPb5TeVPrompt'
+elif args.centClass == 'kpPb5TeVFD':
+    cent = 'pPb5TeVFD'
 else: 
     print(f'ERROR: centrality {args.centClass} is not supported! Exit')
     exit()
@@ -81,8 +85,9 @@ for iPt, (ptMin, ptMax) in enumerate(zip(ptMins, ptMaxs)):
     nRecoFD = hRecoFD[iPt].IntegralAndError(0, hRecoFD[iPt].GetNbinsX()+1, nRecoFDUnc)
     nGenFD = hGenFD[iPt].IntegralAndError(0, hGenFD[iPt].GetNbinsX()+1, nGenFDUnc)
 
-    effPrompt, effPromptUnc = ComputeEfficiency(nRecoPrompt, nGenPrompt, nRecoPromptUnc.value, nGenPromptUnc.value)
-    effFD, effFDUnc = ComputeEfficiency(nRecoFD, nGenFD, nRecoFDUnc.value, nGenFDUnc.value)
+    testfraction = 0.7
+    effPrompt, effPromptUnc = ComputeEfficiency(nRecoPrompt, nGenPrompt, nRecoPromptUnc.value, nGenPromptUnc.value, testfraction)
+    effFD, effFDUnc = ComputeEfficiency(nRecoFD, nGenFD, nRecoFDUnc.value, nGenFDUnc.value, testfraction)
     hEffPrompt.SetBinContent(iPt+1, effPrompt)
     hEffPrompt.SetBinError(iPt+1, effPromptUnc)
     hEffFD.SetBinContent(iPt+1, effFD)

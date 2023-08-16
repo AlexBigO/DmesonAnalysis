@@ -5,11 +5,11 @@ Script with miscellanea utils methods for the analysis
 import ctypes
 import sys
 import numpy as np
-import pandas as pd
+# import pandas as pd
 from ROOT import TFile, TCanvas, TH1F, TF1, TList, TGraph, TGraphErrors, TGraphAsymmErrors # pylint: disable=import-error,no-name-in-module
 from .FitUtils import BkgFitFuncCreator, PeakPowLaw
 
-def ComputeEfficiency(recoCounts, genCounts, recoCountsError, genCountsError):
+def ComputeEfficiency(recoCounts, genCounts, recoCountsError, genCountsError, testfraction=1.):
     '''
     Method to compute efficiency
 
@@ -30,6 +30,7 @@ def ComputeEfficiency(recoCounts, genCounts, recoCountsError, genCountsError):
     hTmpDen.SetBinContent(1, genCounts)
     hTmpNum.SetBinError(1, recoCountsError)
     hTmpDen.SetBinError(1, genCountsError)
+    hTmpNum.Scale(1./testfraction) # to correct efficiency when testfraction of reconstructed candidates are used for efficiency evaluation
     hTmpNum.Divide(hTmpNum, hTmpDen, 1., 1, 'B')
 
     return hTmpNum.GetBinContent(1), hTmpNum.GetBinError(1)

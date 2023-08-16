@@ -3,7 +3,7 @@
 DoDataProjection=true
 DoMCProjection=true
 DoDataRawYields=true
-DoMCRawYields=false
+DoMCRawYields=true
 DoEfficiency=true
 DoAccEff=true
 DoAccEffRw=false
@@ -36,10 +36,10 @@ accFileName="/home/abigot/AnalysisNonPromptDplus/Run2pPb5Tev/2_ML/3_WorkingPoint
 predFileName="models/fonll/feeddown/DmesonLcPredictions_13TeV_y05_FFptDepLHCb_BRpythia8_PDG2020_PromptLcMod.root"
 pprefFileName="" #"ppreference/Ds_ppreference_pp5TeV_noyshift_pt_2_3_4_6_8_12_16_24_36_50.root"
 
-PtWeightsDFileName="" #"home/abigot/AnalysisNonPromptDplus/Run2pPb5Tev/4_Analysis/4_McPtShapeWeight/PtWeigths_NonPromptDplus_LHC16qt.root"
-PtWeightsDHistoName="" #"hPtWeightsFONLLDcent"
-PtWeightsBFileName="" #"home/abigot/AnalysisNonPromptDplus/Run2pPb5Tev/4_Analysis/4_McPtShapeWeight/PtWeigths_NonPromptDplus_LHC16qt.root"
-PtWeightsBHistoName="" #"hPtWeightsFONLLBcent"
+PtWeightsDFileName=$3 #"home/abigot/AnalysisNonPromptDplus/Run2pPb5Tev/4_Analysis/4_McPtShapeWeight/PtWeigths_NonPromptDplus_LHC16qt.root"
+PtWeightsDHistoName=$4 #"hPtWeightsFONLLDcent"
+PtWeightsBFileName=$5 #"home/abigot/AnalysisNonPromptDplus/Run2pPb5Tev/4_Analysis/4_McPtShapeWeight/PtWeigths_NonPromptDplus_LHC16qt.root"
+PtWeightsBHistoName=$6 #"hPtWeightsFONLLBcent"
 
 MultWeightsFileName="" #"systematics/genmultdistr/multweights/MultWeights_pp13TeV_MB_030_fnonprompt.root"
 MultWeightsHistoName="" #"hNtrklWeightsCandInMass"
@@ -59,8 +59,8 @@ arraylength=${#CutSets[@]}
 
 
 
-OutDirRawyields="/home/abigot/AnalysisNonPromptDplus/Run2pPb5Tev/4_Analysis/1_RawYieldExtraction/rawyields_woptweights" #_ptweights_cent"
-OutDirEfficiency="/home/abigot/AnalysisNonPromptDplus/Run2pPb5Tev/4_Analysis/2_AcceptanceEfficiency/efficiencies_woptweights" #_ptweights_cent"
+OutDirRawyields=$1 #"/home/abigot/AnalysisNonPromptDplus/Run2pPb5Tev/4_Analysis/1_RawYieldExtraction/rawyields_woptweights" #_ptweights_cent"
+OutDirEfficiency=$2 #"/home/abigot/AnalysisNonPromptDplus/Run2pPb5Tev/4_Analysis/2_AcceptanceEfficiency/efficiencies_woptweights" #_ptweights_cent"
 OutDirCrossSec=""
 OutDirRaa=""
 ################################################################################################
