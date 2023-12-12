@@ -90,6 +90,7 @@ elif args.system == 'pPb':
     histoName = 'CorrYield'
     if args.centrality in ['0100']:
         systErr.SetCentrality(args.centrality)
+        lumiUnc = 0.037
     else:
         print('ERROR: only 0100 centrality class (MB) implemented! Exit')
         sys.exit()
@@ -218,6 +219,14 @@ if args.system == 'pp':
     gCrossSectionSystLumi.SetPointError(0, 0.4, lumiUnc)
     SetObjectStyle(gCrossSectionSystLumi, color=GetROOTColor('kBlue'), fillstyle=0)
 
+if args.system == 'pPb':
+    gCrossSectionSystLumi = TGraphErrors(1)
+    gCrossSectionSystLumi.SetName('gCorrYieldSystNorm')
+    gCrossSectionSystLumi.SetTitle('Normalisation syst. unc.;;')
+    gCrossSectionSystLumi.SetPoint(0, 1., 1.)
+    gCrossSectionSystLumi.SetPointError(0, 0.4, lumiUnc)
+    SetObjectStyle(gCrossSectionSystLumi, color=GetROOTColor('kBlue'), fillstyle=0)
+
 gROOT.SetBatch(args.batch)
 SetGlobalStyle(padleftmargin=0.18, padbottommargin=0.14)
 
@@ -257,8 +266,9 @@ outFile = TFile(args.outFileName, 'recreate')
 hCrossSection.Write()
 for systSource in systGetter:
     gCrossSectionSyst[systSource].Write()
-if args.system == 'pp':
+if args.system in ['pp', 'pPb']:
     gCrossSectionSystLumi.Write()
+
 hRawYields.Write()
 hEffAccPrompt.Write()
 hEffAccFD.Write()

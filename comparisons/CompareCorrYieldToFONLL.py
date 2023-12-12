@@ -239,7 +239,7 @@ if args.logx:
     legFD = TLegend(0.25, 0.2, 0.45, 0.35)
 else:
     legPrompt = TLegend(0.6, 0.8, 0.8, 0.95)
-    legFD = TLegend(0.45, 0.68, 0.85, 0.8)
+    legFD = TLegend(0.47, 0.62, 0.88, 0.8)
 legPrompt.SetTextSize(0.04)
 legPrompt.SetBorderSize(0)
 legPrompt.SetFillStyle(0)
@@ -301,6 +301,7 @@ if args.FD:
     hCorrYieldFD.DrawCopy('esame')
     if args.syst:
         gCorrYieldFD.Draw('2')
+    legFD.SetTextSize(0.04)
     legFD.AddEntry('', f'Non-prompt {mesonName}', '')
     legFD.AddEntry(hCorrYieldFD, 'Data', 'p')
     legFD.AddEntry(gFONLLFD, 'FONLL scaled by A_{Pb}', 'f')
@@ -314,7 +315,11 @@ lat.SetTextColor(kBlack)
 lat.SetTextFont(42)
 
 lat.DrawLatex(0.22, 0.92, 'WORK IN PROGRESS')
-lat.DrawLatex(0.22, 0.87, 'p-Pb, #sqrt{s} = 5.02 TeV       -0.96 < #it{y} < 0.04')
+lat.DrawLatex(0.22, 0.87, 'p-Pb, #sqrt{s} = 5.02 TeV       -0.96 < #it{y}_{cms} < 0.04')
+lat.SetTextSize(0.02)
+lat.DrawLatex(0.22, 0.25, '#pm 1.7% BR unc. not shown')
+lat.DrawLatex(0.22, 0.2, '#pm 3.7% lumi. unc. not shown')
+lat.SetTextSize(0.04)
 
 cCrossSec.Update()
 cCrossSec.SaveAs(args.outFileName)

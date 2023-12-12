@@ -128,6 +128,7 @@ def data_prep(inputCfg, iBin, PtBin, OutPutDirPt, PromptDf, FDDf, BkgDf): #pylin
         OutputLabels.append(inputCfg['output']['out_labels']['FD'])
     ListDf = [BkgDf, PromptDf] if FDDf.empty else [BkgDf, PromptDf, FDDf]
     #_____________________________________________
+    plt.rcParams["legend.fontsize"] = "large"
     plot_utils.plot_distr(ListDf, VarsToDraw, 100, LegLabels, figsize=(12, 7),
                           alpha=0.3, log=True, grid=False, density=True)
     plt.subplots_adjust(left=0.06, bottom=0.06, right=0.99, top=0.96, hspace=0.55, wspace=0.55)
@@ -135,7 +136,7 @@ def data_prep(inputCfg, iBin, PtBin, OutPutDirPt, PromptDf, FDDf, BkgDf): #pylin
         plt.savefig(f'{OutPutDirPt}/DistributionsAll_pT_{PtBin[0]}_{PtBin[1]}.{format}')
     plt.close('all')
     #_____________________________________________
-    CorrMatrixFig = plot_utils.plot_corr(ListDf, VarsToDraw, LegLabels)
+    CorrMatrixFig = plot_utils.plot_corr(ListDf, VarsToDraw, LegLabels)  # , LegVars)
     for Fig, Lab in zip(CorrMatrixFig, OutputLabels):
         plt.figure(Fig.number)
         plt.subplots_adjust(left=0.2, bottom=0.25, right=0.95, top=0.9)
@@ -227,6 +228,7 @@ def train_test(inputCfg, PtBin, OutPutDirPt, TrainTestData, iBin): #pylint: disa
         OutputLabels.append(inputCfg['output']['out_labels']['FD'])
     #_____________________________________________
     plt.rcParams["figure.figsize"] = (10, 7)
+    plt.rcParams["legend.fontsize"] = "large"
     MLOutputFig = plot_utils.plot_output_train_test(ModelHandl, TrainTestData, 80, inputCfg['ml']['raw_output'],
                                                     LegLabels, inputCfg['plots']['train_test_log'], density=True)
     if n_classes > 2:
@@ -238,6 +240,9 @@ def train_test(inputCfg, PtBin, OutPutDirPt, TrainTestData, iBin): #pylint: disa
             MLOutputFig.savefig(f'{OutPutDirPt}/MLOutputDistr_pT_{PtBin[0]}_{PtBin[1]}.{format}')
     #_____________________________________________
     plt.rcParams["figure.figsize"] = (10, 9)
+    # plt.rcParams["font.size"] = 18
+    # plt.rcParams["axes.labelsize"] = 18
+    # plt.rcParams["legend.fontsize"] = 18
     ROCCurveFig = plot_utils.plot_roc(TrainTestData[3], yPredTest, None, LegLabels, inputCfg['ml']['roc_auc_average'],
                                       inputCfg['ml']['roc_auc_approach'])
     for format in inputCfg['plots']['outfileformat']:
@@ -256,15 +261,22 @@ def train_test(inputCfg, PtBin, OutPutDirPt, TrainTestData, iBin): #pylint: disa
         PrecisionRecallFig.savefig(f'{OutPutDirPt}/PrecisionRecallAll_pT_{PtBin[0]}_{PtBin[1]}.{format}')
     #_____________________________________________
     plt.rcParams["figure.figsize"] = (12, 7)
+    # new_df = TrainTestData[2][TrainCols].rename(columns={"norm_dl_xy": "yolo"})
+    # train_test_data3 = TrainTestData[3].rename(columns={"norm_dl_xy": "yolo"})
+    # FeaturesImportanceFig = plot_utils.plot_feature_imp(new_df, train_test_data3, ModelHandl,
+    #                                                     LegLabels)
     FeaturesImportanceFig = plot_utils.plot_feature_imp(TrainTestData[2][TrainCols], TrainTestData[3], ModelHandl,
                                                         LegLabels)
+    # plt.legend(fontsize=15)
     n_plot = n_classes if n_classes > 2 else 1
     for iFig, Fig in enumerate(FeaturesImportanceFig):
         if iFig < n_plot:
             label = OutputLabels[iFig] if n_classes > 2 else ''
+            plt.rcParams["legend.fontsize"] = "x-large"
             for format in inputCfg['plots']['outfileformat']:
                 Fig.savefig(f'{OutPutDirPt}/FeatureImportance{label}_pT_{PtBin[0]}_{PtBin[1]}.{format}')
         else:
+            plt.rcParams["legend.fontsize"] = "x-large"
             for format in inputCfg['plots']['outfileformat']:
                 Fig.savefig(f'{OutPutDirPt}/FeatureImportanceAll_pT_{PtBin[0]}_{PtBin[1]}.{format}')
 
@@ -282,9 +294,9 @@ def appl(inputCfg, PtBin, OutPutDirPt, ModelHandl, DataDfPtSel, PromptDfPtSelFor
     if not isinstance(df_column_to_save_list, list):
         print('\033[91mERROR: df_column_to_save_list must be defined!\033[0m')
         sys.exit()
-    if 'inv_mass' not in df_column_to_save_list:
+    if "$M(\pi K \pi)$" not in df_column_to_save_list:
         print('\033[93mWARNING: inv_mass is not going to be saved in the output dataframe!\033[0m')
-    if 'pt_cand' not in df_column_to_save_list:
+    if "$p_{T}$" not in df_column_to_save_list:
         print('\033[93mWARNING: pt_cand is not going to be saved in the output dataframe!\033[0m')
     PromptDfPtSelForEff = PromptDfPtSelForEff.loc[:, df_column_to_save_list]
     if FDDfPtSelForEff.empty:
@@ -340,18 +352,39 @@ def main(): #pylint: disable=too-many-statements
                                                                          inputCfg['input']['treename'])
     DataHandler = TreeHandler(inputCfg['input']['data'], inputCfg['input']['treename'])
 
+    dic = {}
+    for (key, value) in zip(inputCfg["plots"]["name_columns"], inputCfg["plots"]["plotting_columns"]):
+        dic[key] = value
+
+
     if inputCfg['data_prep']['filt_bkg_mass']:
         BkgHandler = DataHandler.get_subset(inputCfg['data_prep']['filt_bkg_mass'], frac=1.,
                                             rndm_state=inputCfg['data_prep']['seed_split'])
     else:
         BkgHandler = DataHandler
 
+    df_prompt = PromptHandler.get_data_frame()
+    PromptHandler.set_data_frame(df_prompt.rename(columns=dic))
+
+    print(df_prompt.rename(columns=dic))
+
+    df_nonprompt = FDHandler.get_data_frame()
+    FDHandler.set_data_frame(df_nonprompt.rename(columns=dic))
+
+    df_data = DataHandler.get_data_frame()
+    DataHandler.set_data_frame(df_data.rename(columns=dic))
+
+    df_bkg = BkgHandler.get_data_frame()
+    BkgHandler.set_data_frame(df_bkg.rename(columns=dic))
+
     PtBins = [[a, b] for a, b in zip(inputCfg['pt_ranges']['min'], inputCfg['pt_ranges']['max'])]
-    PromptHandler.slice_data_frame('pt_cand', PtBins, True)
+    PromptHandler.slice_data_frame(dic["pt_cand"], PtBins, True)
     if FDHandler is not None:
-        FDHandler.slice_data_frame('pt_cand', PtBins, True)
-    DataHandler.slice_data_frame('pt_cand', PtBins, True)
-    BkgHandler.slice_data_frame('pt_cand', PtBins, True)
+        FDHandler.slice_data_frame(dic["pt_cand"], PtBins, True)
+    DataHandler.slice_data_frame(dic["pt_cand"], PtBins, True)
+    BkgHandler.slice_data_frame(dic["pt_cand"], PtBins, True)
+
+
     print('Loading and preparing data files: Done!')
 
     for iBin, PtBin in enumerate(PtBins):

@@ -38,7 +38,8 @@ elif args.centrality == '6080':
     taa = 0.4188
     taaUnc = 0.0106
 elif args.centrality == '0100':
-    taa = 208
+    lumiunc = 0.037
+    taa = 208 # plays the role of ApPb
     taaUnc = 0.
     # taa = 0.09923
     # taaUnc = 0.0017
@@ -109,8 +110,56 @@ gRaaSystNorm = TGraphErrors(1)
 gRaaSystNorm.SetName('gRaaSystNorm')
 gRaaSystNorm.SetTitle('Normalization syst. unc. (pp norm. + Taa);;')
 gRaaSystNorm.SetPoint(0, 1., 1.)
-gRaaSystNorm.SetPointError(0, 0.4, np.sqrt((taaUnc / taa)**2 + gCrossSectionPPSystLumi.GetErrorY(0)**2))
+if args.centrality == '0100':
+    gRaaSystNorm.SetPointError(0, 0.4, np.sqrt(lumiunc**2 + gCrossSectionPPSystLumi.GetErrorY(0)**2))
+else:
+    gRaaSystNorm.SetPointError(0, 0.4, np.sqrt((taaUnc / taa)**2 + gCrossSectionPPSystLumi.GetErrorY(0)**2))
 SetObjectStyle(gRaaSystNorm, color=GetROOTColor('kAzure+4'), fillstyle=0)
+
+
+
+######## ADD SEPARATE SYSTEMATICS FOR RAA ######## START
+# To have TGraphErrors for pT integrated Raa
+
+kNum, kDenom = 0, 1
+
+graphNamesNum = ["gCorrYieldSystYieldExtr", "gCorrYieldSystSelEff", "gCorrYieldSystTrEff",
+                "gCorrYieldSystPIDEff", "gCorrYieldSystPtShape", "gCorrYieldSystFD"]
+
+graphNamesDenom = ["gCrossSectionSystYieldExtr", "gCrossSectionSystSelEff", "gCrossSectionSystTrEff",
+                "gCrossSectionSystPIDEff", "gCrossSectionSystPtShape", "gCrossSectionSystFD"]
+
+graphNamesRatio = ["gRaaSystYieldExtr", "gRaaSystSelEff", "gRaaSystTrEff",
+                "gRaaSystPIDEff", "gRaaSystPtShape", "gRaaSystFD"]
+
+
+gCorrYieldNum, gCorrYieldDenom, gRatio =  [], [], []
+for graphName in graphNamesNum:
+    gCorrYieldNum.append(corrYieldFile.Get(graphName))
+    
+for graphName in graphNamesDenom:
+    gCorrYieldDenom.append(ppCrossSecFile.Get(graphName))
+
+for graphName in graphNamesRatio:
+    gRatio.append(TGraphErrors(1))
+    gRatio[-1].SetName(graphName)
+    gRatio[-1].SetTitle(';#it{p}_{T} (GeV/#it{c}); d^{2}#sigma/d#it{p}_{T}d#it{y} #times BR  (#mub GeV^{-1} #it{c})')
+
+for iPt in range(hRaa.GetNbinsX()):
+    for iGraph, _ in enumerate(gCorrYieldNum):
+        pbpbValue = gCorrYieldNum[iGraph].GetPointY(iPt)
+        pbpbSystUnc = gCorrYieldNum[iGraph].GetErrorY(iPt)
+        ppValue = gCorrYieldDenom[iGraph].GetPointY(iPt)
+        ppSystUnc = gCorrYieldDenom[iGraph].GetErrorY(iPt)
+
+        raa = hRaa.GetBinContent(iPt+1)
+        relRaaSystUnc = np.sqrt((ppSystUnc / ppValue)**2 + (pbpbSystUnc / pbpbValue)**2)
+        ptCent = hRaa.GetBinCenter(iPt+1)
+
+        gRatio[iGraph].SetPoint(iPt, ptCent, raa)
+        gRatio[iGraph].SetPointError(iPt, 0.4, relRaaSystUnc * raa)
+
+######## ADD SEPARATE SYSTEMATICS FOR RAA ######## END
 
 for iPt in range(hRaa.GetNbinsX()):
     ppValue = gCrossSectionPPSystTot.GetPointY(iPt)
@@ -153,6 +202,8 @@ cRaa.Update()
 
 outFile = TFile(args.outFileName, 'recreate')
 hRaa.Write()
+for graph in gRatio:
+    graph.Write()
 gRaaSystTot.Write()
 gRaaSystNorm.Write()
 gRaaSystTaa.Write()

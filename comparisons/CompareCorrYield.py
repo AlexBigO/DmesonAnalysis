@@ -78,6 +78,37 @@ ptmax = hCorrYield[0].GetBinLowEdge(hCorrYield[0].GetNbinsX())+hCorrYield[0].Get
 # lineatone.SetLineColor(kBlack)
 # lineatone.SetLineStyle(9)
 
+
+
+cCorrYieldNoRatio = TCanvas('cCorrYieldNoRatio', '', 800, 800)
+cCorrYieldNoRatio.DrawFrame(ptmin, 1.e-1, ptmax, 1.e+5,
+                           ';#it{p}_{T} (GeV/#it{c}); d^{2}#sigma/d#it{p}_{T}d#it{y} (#mub GeV^{-1} #it{c})')
+
+cCorrYieldNoRatio.cd(1).SetLogy()
+# lineatone.Draw('same')
+for iFile in range(len(inputfilenames)):
+    gCorrYield[iFile].Draw('2')
+    hCorrYield[iFile].Draw('same')
+leg.Draw()
+
+# ALICE header
+latex = TLatex()
+latex.SetNDC()
+latex.SetTextSize(0.04)
+latex.SetTextAlign(13);  # align at top
+latex.SetTextFont(42)
+latex.DrawLatex(0.22, 0.92, 'WORK IN PROGRESS')
+latex.DrawLatex(0.22, 0.87, 'p-Pb, #sqrt{s_{NN}} = 5.02 TeV       -0.96 < #it{y}_{cms} < 0.04')
+latex.SetTextSize(0.02)
+latex.DrawLatex(0.22, 0.25, '#pm 1.7% BR unc. not shown')
+latex.DrawLatex(0.22, 0.2, '#pm 3.7% lumi. unc. not shown')
+
+cCorrYieldNoRatio.SaveAs('%s/CorrYieldComparisonNoRatio_%s.pdf' % (inputdir, outputsuffix))
+
+
+########################################
+
+
 cCorrYield = TCanvas('cCorrYield', '', 1000, 500)
 cCorrYield.Divide(2, 1)
 cCorrYield.cd(1).DrawFrame(ptmin, 1.e-1, ptmax, 1.e+5,
@@ -97,10 +128,10 @@ latex.SetTextSize(0.04)
 latex.SetTextAlign(13);  # align at top
 latex.SetTextFont(42)
 latex.DrawLatex(0.22, 0.92, 'WORK IN PROGRESS')
-latex.DrawLatex(0.22, 0.87, 'p-Pb, #sqrt{s_{NN}} = 5.02 TeV       -0.96 < #it{y} < 0.04')
+latex.DrawLatex(0.22, 0.87, 'p-Pb, #sqrt{s_{NN}} = 5.02 TeV       -0.96 < #it{y}_{cms} < 0.04')
 latex.SetTextSize(0.02)
 latex.DrawLatex(0.22, 0.25, '#pm 1.7% BR unc. not shown')
-latex.DrawLatex(0.22, 0.2, '#pm 2.1% lumi. unc. not shown')
+latex.DrawLatex(0.22, 0.2, '#pm 3.7% lumi. unc. not shown')
 
 
 hCorrYieldRatio.append(hRatio_pp)

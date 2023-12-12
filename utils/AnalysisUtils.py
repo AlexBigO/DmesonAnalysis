@@ -425,7 +425,7 @@ def GetExpectedSignal(crossSec, deltaPt, deltaY, effTimesAcc, frac, BR, fractoD,
     ----------
     - expected signal
     '''
-    return 2 * crossSec * deltaPt * deltaY * effTimesAcc * BR * fractoD * nEv * TAA * RAA / frac / sigmaMB
+    return 2 * crossSec * deltaPt * deltaY * effTimesAcc * BR * fractoD * nEv * TAA * RAA  / frac / sigmaMB
 
 
 def ComputeCrossSection(rawY, uncRawY, frac, uncFrac, effTimesAcc,

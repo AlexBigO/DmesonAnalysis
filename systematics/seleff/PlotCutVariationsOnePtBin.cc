@@ -151,7 +151,12 @@ void PlotCutVariationsOnePtBin(TString cfgFileName) {
     }
   
     const int nPtBins = hRawYield[0]->GetNbinsX();
+    const int nPtLims = nPtBins + 1;
     const int nSystBins = static_cast<const int>(relAssignedSyst.size());
+    double PtLims[nPtLims];
+    for (int iPt = 0; iPt < nPtBins; iPt++)
+        PtLims[iPt] = hRawYield[0]->GetBinLowEdge(iPt+1);
+    PtLims[nPtBins] = hRawYield[0]->GetBinLowEdge(nPtBins) + hRawYield[0]->GetBinWidth(nPtBins);
     if(nSystBins < nPtBins) { // fill syst unc with zeros if not provided
         for(int iBin = 0; iBin < nPtBins-nSystBins; iBin++)
             relAssignedSyst.push_back(0);
@@ -399,38 +404,39 @@ void PlotCutVariationsOnePtBin(TString cfgFileName) {
         if(!fRelativeVariation) 
             cOutPut[iPt]->cd(1)->DrawFrame(-1.,0.,nFiles,maxrawyield[iPt]*1.5,";cut set; raw yield");
         else 
-            cOutPut[iPt]->cd(1)->DrawFrame(-1.,0.,nFiles,2.5,";cut set; raw yield / raw yield (central)");
+            cOutPut[iPt]->cd(1)->DrawFrame(-1.,0.,nFiles,2.5,Form("%0.1f < #it{p}_{T} < %0.1f GeV/#it{c};cut set; raw yield / raw yield (central)", PtLims[iPt],PtLims[iPt+1]));
         gRawYieldVsCutSet[iPt]->Draw("PZ");
         if(!fRelativeVariation) {
             cOutPut[iPt]->cd(2)->DrawFrame(-1.,minefficiency[iPt]*0.5,nFiles,maxefficiency[iPt]*1.5,";cut set; efficiency");
             cOutPut[iPt]->cd(2)->SetLogy();
         }
         else 
-            cOutPut[iPt]->cd(2)->DrawFrame(-1.,0.,nFiles,3.,";cut set; efficiency / efficiency (central)");
+            cOutPut[iPt]->cd(2)->DrawFrame(-1.,0.,nFiles,3.,Form("%0.1f < #it{p}_{T} < %0.1f GeV/#it{c};cut set; efficiency / efficiency (central)", PtLims[iPt],PtLims[iPt+1]));
         gEffFDVsCutSet[iPt]->Draw("PZ");
         gEffPromptVsCutSet[iPt]->Draw("PZ");
         legEff->Draw("same");
         if(!fRelativeVariation) 
-            cOutPut[iPt]->cd(3)->DrawFrame(-1.,0.,nFiles,1.5,";cut set; fraction");
+            cOutPut[iPt]->cd(3)->DrawFrame(-1.,0.,nFiles,1.5,Form("%0.1f < #it{p}_{T} < %0.1f GeV/#it{c};cut set; fraction", PtLims[iPt],PtLims[iPt+1]));
         else 
-            cOutPut[iPt]->cd(3)->DrawFrame(-1.,0.,nFiles,3.5,";cut set; fraction / fraction (central)");
+            cOutPut[iPt]->cd(3)->DrawFrame(-1.,0.,nFiles,3.5,Form("%0.1f < #it{p}_{T} < %0.1f GeV/#it{c};cut set; fraction / fraction (central)", PtLims[iPt],PtLims[iPt+1]));
         gFDFracVsCutSet[iPt]->Draw("PZ");
         gPromptFracVsCutSet[iPt]->Draw("PZ");
         legEff->Draw("same");
-        cOutPut[iPt]->cd(4)->DrawFrame(-1.,0.,nFiles,maxsignif[iPt]*1.5,";cut set; significance");
+        cOutPut[iPt]->cd(4)->DrawFrame(-1.,0.,nFiles,maxsignif[iPt]*1.5,Form("%0.1f < #it{p}_{T} < %0.1f GeV/#it{c};cut set; significance",PtLims[iPt],PtLims[iPt+1]));
         gSignificanceVsCutSet[iPt]->Draw("PZ");
-        cOutPut[iPt]->cd(5)->DrawFrame(-1.,0.,nFiles,maxSoverB[iPt]*1.5,";cut set; S/B (3#sigma)");
+        cOutPut[iPt]->cd(5)->DrawFrame(-1.,0.,nFiles,maxSoverB[iPt]*1.5,Form("%0.1f < #it{p}_{T} < %0.1f GeV/#it{c};cut set; S/B (3#sigma)",PtLims[iPt],PtLims[iPt+1]));
         gSoverBVsCutSet[iPt]->Draw("PZ");
-        cOutPut[iPt]->cd(6)->DrawFrame(-1.,maxCross[iPt]/4,nFiles,maxCross[iPt]*1.5, Form(";cut set; %s (GeV^{-1} #it{c})", crossSectionTitle.Data()));
+        cOutPut[iPt]->cd(6)->DrawFrame(-1.,maxCross[iPt]/4,nFiles,maxCross[iPt]*1.5, Form("%0.1f < #it{p}_{T} < %0.1f GeV/#it{c};cut set; %s (GeV^{-1} #it{c})", PtLims[iPt],PtLims[iPt+1], crossSectionTitle.Data()));
         lCrossSectionCent[iPt]->Draw("same");
         gCrossSectionCent[iPt]->Draw("2");
         gCrossSectionVsCutSet[iPt]->Draw("PZ");
         legCross->Draw("same");
-        cOutPut[iPt]->cd(7)->DrawFrame(0.55,0.,1.45,hCrossSectionRatioDist[iPt]->GetMaximum()*1.5, Form("%d;(%s) / (%s)_{central};entries", iPt, crossSectionTitle.Data(), crossSectionTitle.Data()));
+        cOutPut[iPt]->cd(7)->DrawFrame(0.55,0.,1.45,hCrossSectionRatioDist[iPt]->GetMaximum()*1.5, Form("%0.1f < #it{p}_{T} < %0.1f GeV/#it{c};(%s) / (%s)_{central};entries", PtLims[iPt],PtLims[iPt+1], crossSectionTitle.Data(), crossSectionTitle.Data()));
         hCrossSectionRatioDist[iPt]->Draw("same");
         bCrossSectionSyst[iPt]->Draw("same");
         bCrossSectionRMS[iPt]->Draw("same");
         legSyst->Draw("same");
+
     }
     
     TFile outfile(outFileName.data(),"recreate");
@@ -448,6 +454,10 @@ void PlotCutVariationsOnePtBin(TString cfgFileName) {
         hCrossSectionRatioDist[iPt]->Write();
     }
     outfile.Close();
+
+    for(int iPt=0; iPt<nPtBins; iPt++) {
+        cOutPut[iPt]->SaveAs(Form("/home/abigot/AnalysisNonPromptDplus/Run2pPb5Tev/5_Systematics/2_MLSelectionEfficiency/SelEffSystematics_Dplus_pPb5TeV_FD_pt_%.0f_%.0f.png", PtLims[iPt]*10,PtLims[iPt+1]*10));
+    }
 
     outFileName = regex_replace(outFileName, regex(".root"), ".pdf");
     cOutPut[0]->SaveAs(Form("%s[", outFileName.data()));
